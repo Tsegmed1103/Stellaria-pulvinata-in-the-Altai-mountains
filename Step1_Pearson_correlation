@@ -1,0 +1,13 @@
+library(corrplot) 
+data <- read.csv("S_pula.csv")  
+numeric_data <- data[sapply(data, is.numeric)]
+corr_matrix <- cor(numeric_data, use = "complete.obs", method = "pearson") 
+jpeg("Pearson_correlation.jpg", width = 3000, height = 3000, res = 300) 
+corrplot(corr_matrix, method = "color", type = "upper", 
+         addCoef.col = "black",    # Show correlation coefficients
+         tl.col = "black",         # Label color
+         tl.srt = 90,              # Rotate labels 
+         number.cex = 0.5,         # Size of correlation coefficients
+         tl.cex = 0.6)             # Size of text labels
+
+dev.off()
