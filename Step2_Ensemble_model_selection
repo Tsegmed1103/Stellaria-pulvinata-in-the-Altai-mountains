@@ -1,0 +1,67 @@
+library(sdm)
+library(raster)
+library(sp)
+library(dismo)
+library(rJava)
+library(dplyr)
+library(usdm)
+
+src <- "D:/Paper manuscript/Rheum/maxent/maxent.jar"
+
+dismo_java_dir <- system.file("java", package = "dismo")
+dst <- file.path(dismo_java_dir, "maxent.jar")
+ok <- file.copy(src, dst, overwrite = TRUE)
+if(!ok) stop("maxent.jar-ыг хуулж чадсангүй: ", dst)
+
+file.exists(dst) || stop("maxent.jar: ", dst)
+options(java.parameters = "-Xmx4g")
+file.exists(file.path(system.file("java", package="dismo"), "maxent.jar"))
+occ <- read.csv("Occur.csv")
+stopifnot(all(c("decimalLongitude","decimalLatitude") %in% names(occ)))
+occ$species <- 1
+coordinates(occ) <- ~ decimalLongitude + decimalLatitude
+proj4string(occ) <- CRS("EPSG:4326")
+proj4string(occ) <- sp::CRS("+proj=longlat +datum=WGS84 +no_defs")
+rstack <- stack(list.files('Bio_list/', '\\.tif$', full.names = TRUE))
+if (is.na(raster::crs(rstack))) {
+  raster::crs(rstack) <- sp::CRS("+proj=longlat +datum=WGS84 +no_defs")
+}
+names(rstack) <- make.names(names(rstack), allow_ = TRUE)
+plot(rstack[[1]])
+plot(occ, add=TRUE)
+library(raster)
+library(usdm)
+d <- sdmData(species ~., occ,
+             predictors = rstack,
+             bg = list(method = "gRandom", n = 5000))
+d
+getmethodNames()
+methods_use <- c("GLM", "RF", "BRT", "GAM", "MAXENT")
+m <- sdm(species ~ ., data = d, methods = methods_use,
+         replication = "boot", test.p = 30, n = 15,
+         maxent.args = c("maximumiterations=5000"),
+         parallelSetting = list(cores = 10, method = 'parallel'))
+print(m)
+
+library(dplyr)
+library(ggplot2)
+library(methods)
+
+info <- getModelInfo(m) %>% select(modelID, method)
+
+ev <- getEvaluation(m, wtest = "test.dep")
+if (!("AUC" %in% names(ev))) ev <- getEvaluation(m, wtest = "training")
+ev_auc <- ev %>%
+  left_join(info, by = "modelID") %>%   # method нэмэх
+  filter(!is.na(AUC)) %>%
+  mutate(method = factor(method, levels = c("GLM", "RF", "BRT", "GAM", "MAXENT")))
+
+p_auc <- ggplot(ev_auc, aes(x = method, y = AUC, fill = method)) +
+  geom_boxplot(width = 0.6, outlier.shape = NA, color = "#2C3E8F") +
+  stat_summary(fun = median, geom = "point", shape = 95, size = 6, color = "#2C3E8F") +
+  labs(title = "Box Plot of AUC by Algorithm", x = "Algorithm", y = "AUC") +
+  scale_fill_brewer(palette = "Set2") +
+  theme_minimal(base_size = 14) +
+  theme(legend.position = "none")
+p_auc
+getmethodNames()
