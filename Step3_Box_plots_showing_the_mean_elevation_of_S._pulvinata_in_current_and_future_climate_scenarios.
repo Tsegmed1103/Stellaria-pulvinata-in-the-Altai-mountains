@@ -1,0 +1,84 @@
+library(ggplot2)
+library(dplyr)
+library(ggpubr)
+library(multcompView)
+library(readr) 
+library(broom)
+Data$Years <- as.factor(Data$Years) 
+anova <- aov(Elevation ~ Years, data = Data) 
+summary(anova) 
+tukey <- TukeyHSD(anova)
+print(tukey)
+cld <- multcompLetters4(anova, tukey) # includes interactions!
+print(cld)
+data_summary <- group_by(Data, Years) %>%
+  summarise(mean=mean(Elevation), quant = quantile(Elevation, probs = 0.95)) %>%
+  arrange(desc(mean))
+print(data_summary) 
+add_cld <- as.data.frame.list(cld$Years) 
+data_summary$Tukey <- add_cld$Letters 
+print(data_summary) 
+personal_theme = theme(plot.title = 
+                         element_text(hjust = 0.5)) 
+
+ggplot(Data, aes(Years, Elevation, fill = Years)) +
+  geom_boxplot() +
+  labs(title = "ANOVA with Tukey HSD - Elevation by Years",
+       x = "Years", y = "Elevation") +
+  theme_bw() + 
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) +
+  geom_text(data = data_summary,
+            aes(y = quant, label = Tukey),
+            position = position_dodge(0.90),
+            size = 3,
+            vjust = -1.6,
+            hjust = -0.7) +
+  annotate("text", x = 1.5, y = 4200, label = "F = 25.232, p < 0.0001", size = 4)
+
+ggsave("ANOVA.jpg") 
+
+ggsave("ANOVA).jpg", width = 10, height = 8, dpi=300) 
+
+
+library(ggplot2)
+library(dplyr)
+library(ggpubr)
+library(multcompView)
+library(readr) 
+library(broom)
+Data$Years <- as.factor(Data$Years) 
+anova <- aov(Elevation ~ Years, data = Data) 
+summary(anova) 
+tukey <- TukeyHSD(anova)
+print(tukey)
+cld <- multcompLetters4(anova, tukey) # includes interactions!
+print(cld)
+data_summary <- group_by(Data, Years) %>%
+  summarise(mean=mean(Elevation), quant = quantile(Elevation, probs = 0.95)) %>%
+  arrange(desc(mean))
+print(data_summary) 
+add_cld <- as.data.frame.list(cld$Years) 
+data_summary$Tukey <- add_cld$Letters 
+print(data_summary) 
+personal_theme = theme(plot.title = 
+                         element_text(hjust = 0.5)) 
+
+ggplot(Data, aes(Years, Elevation, fill = Years)) +
+  geom_boxplot() +
+  labs(title = "ANOVA with Tukey HSD - Elevation by Year",
+       x = "Years", y = "Elevation") +
+  theme_bw() + 
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) +
+  geom_text(data = data_summary,
+            aes(y = quant, label = Tukey),
+            position = position_dodge(0.90),
+            size = 3,
+            vjust = -1.6,
+            hjust = -0.7) +
+  annotate("text", x = 1.5, y = 4200, label = "F = 24.815, p < 0.0001", size = 4)
+
+ggsave("ANOVA.jpg") 
+
+ggsave("ANOVA).jpg", width = 10, height = 8, dpi=300) 
+
+
